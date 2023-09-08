@@ -10,12 +10,19 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QFileDialog, QSplashScreen
 from PyQt6.QtCore import QThread, QObject, pyqtSignal, Qt
 from PyQt6.uic import loadUi
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QIcon
 
 import os
 import rasterio as rast
 from osgeo import gdal 
 import time
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+datadir = resource_path("data")
 
 
 class Ui_Compress(object):
@@ -381,9 +388,9 @@ class SplashScreen(QSplashScreen):
     def __init__(self):
         super(QSplashScreen, self).__init__()
 
-        loadUi("splasher.ui", self)
+        loadUi(os.path.join(datadir,"splasher.ui"), self)
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        pixmap = QPixmap("splashscreenn.png")
+        pixmap = QPixmap(os.path.join(datadir,"splashscreenn.png"))
         self.setPixmap(pixmap)
  
 
@@ -394,6 +401,7 @@ class SplashScreen(QSplashScreen):
 
 
 if __name__ == "__main__":
+    print("Python Code Starts Here")
     import sys
 
     inputfile = ""
@@ -401,10 +409,12 @@ if __name__ == "__main__":
     compression_level = ""
     compression_index = 0
     tiles = 1
-    os.environ['PROJ_LIB'] = r"C:\Users\User\Desktop\reduceTIF\venv\Lib\site-packages\osgeo\data\proj"
+    
+    os.environ['PROJ_LIB'] = os.path.join(datadir,"proj")
 
 
     app = QtWidgets.QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.join(datadir, "sat.ico")))
 
     splash = SplashScreen()
     splash.show()
