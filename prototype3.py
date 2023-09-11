@@ -12,6 +12,7 @@ from PyQt6.QtCore import QThread, QObject, pyqtSignal, Qt
 from PyQt6.uic import loadUi
 from PyQt6.QtGui import QPixmap, QIcon
 
+import sys
 import os
 import rasterio as rast
 from osgeo import gdal 
@@ -406,7 +407,7 @@ if __name__ == "__main__":
 
     inputfile = ""
     destfolder = ""
-    compression_level = ""
+    compression_level = "50"
     compression_index = 0
     tiles = 1
     
