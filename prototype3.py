@@ -18,6 +18,9 @@ import rasterio as rast
 from osgeo import gdal 
 import time
 
+if getattr(sys, 'frozen', False):
+    import pyi_splash
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -164,6 +167,10 @@ class Ui_Compress(object):
         Compress.setStatusBar(self.statusbar)
         self.menubar.addAction(self.menuMenu.menuAction())
 
+        if getattr(sys, 'frozen', False):
+            pyi_splash.close()
+
+
         self.retranslateUi(Compress)
         QtCore.QMetaObject.connectSlotsByName(Compress)
 
@@ -291,6 +298,8 @@ class Ui_Compress(object):
         
         self.label_5.setStyleSheet("color: black")
 
+        self.label_5.setText("Compressing...")
+
         self.thread = QThread()
         # Step 3: Create a worker object
         self.worker = Worker()
@@ -303,12 +312,16 @@ class Ui_Compress(object):
         self.thread.finished.connect(self.thread.deleteLater)
         self.worker.progress.connect(self.reportProgress)
         # Step 6: Start the thread
-        self.label_5.setText("Compressing...")
+        
         self.thread.start()
 
         self.pushButton_3.setEnabled(False)
+        self.pushButton_4.setEnabled(False)
         self.thread.finished.connect(
             lambda: self.pushButton_3.setEnabled(True)
+        )
+        self.thread.finished.connect(
+            lambda: self.pushButton_4.setEnabled(True)
         )
         self.thread.finished.connect(
             lambda: self.label_5.setText("Finished!")
@@ -372,39 +385,24 @@ class Worker(QObject):
 
                 #string to pass to GDAL
                 #com_string = r"gdal_translate -of GTIFF -outsize 50% 50% -co COMPRESS=LZW -srcwin " + str(i)+ " " + str(j) + " " + str(tile_size_x) + " " + str(tile_size_y) + " "  + str(input_filename) + " " + str(output_filename) + str(i) + "_" + str(j) + ".tif"
-                com_string = r"gdal_translate -of GTIFF -outsize "+compression_level+"% "+compression_level+r"% -co COMPRESS="+compression[compression_index]+" -srcwin " + str(i)+ " " + str(j) + " " + str(tile_size_x) + " " + str(tile_size_y) + " "  + str(inputfile) + " " + str(output_filename) + str(i) + "_" + str(j) + ".tif"
+                #com_string = r"gdal_translate -of GTIFF -outsize "+compression_level+"% "+compression_level+r"% -co COMPRESS="+compression[compression_index]+" -srcwin " + str(i)+ " " + str(j) + " " + str(tile_size_x) + " " + str(tile_size_y) + " "  + str(inputfile) + " " + str(output_filename) + str(i) + "_" + str(j) + ".tif"
                 #com_string = r"gdal_translate -of GTIFF -co COMPRESS=LERC -co MAX_Z_ERROR = 0.01 " + str(input_filename) + r" C:\Users\User\Desktop\learnpy\outputtest.tif"
-                print(com_string)
+                #print(com_string)
                 #os.system(com_string)
 
                 dest = str(output_filename) + str(i) + "_" + str(j) + ".tif"
-                options = gdal.TranslateOptions(format="GTIFF",widthPct=compression_level,heightPct=compression_level,creationOptions=["COMPRESS="+compression[compression_index]],srcWin=[i,j,tile_size_x,tile_size_y])
+                options = gdal.TranslateOptions(format="GTIFF",widthPct=int(compression_level),heightPct=int(compression_level),creationOptions=["COMPRESS="+compression[compression_index]],srcWin=[i,j,tile_size_x,tile_size_y])
                 gdal.Translate(dest,inputfile,options=options)
                 iteration = iteration + 1
                 self.progress.emit(iteration)
         
         self.finished.emit()
 
-class SplashScreen(QSplashScreen):
-    def __init__(self):
-        super(QSplashScreen, self).__init__()
-
-        loadUi(os.path.join(datadir,"splasher.ui"), self)
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        pixmap = QPixmap(os.path.join(datadir,"splashscreenn.png"))
-        self.setPixmap(pixmap)
- 
-
-    def progress(self):
-        for i in range(100):
-            time.sleep(0.1)
-            self.progressBar.setValue(i)
-
 
 if __name__ == "__main__":
     print("Python Code Starts Here")
-    import sys
 
+    
     inputfile = ""
     destfolder = ""
     compression_level = "50"
@@ -417,14 +415,10 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QIcon(os.path.join(datadir, "sat.ico")))
 
-    splash = SplashScreen()
-    splash.show()
-    splash.progress()
     Form = QtWidgets.QMainWindow()
     ui = Ui_Compress()
     ui.setupUi(Form)
     Form.show()
 
-    splash.finish(Form)
     sys.exit(app.exec())
 
